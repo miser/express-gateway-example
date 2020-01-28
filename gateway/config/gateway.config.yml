@@ -1,0 +1,60 @@
+http:
+  port: 8080
+# admin:
+#   port: 9876
+#   host: localhost
+apiEndpoints:
+  # login:
+  #   host: localhost
+  #   paths: '/account/login'
+  account:
+    host: localhost
+    paths: '/account/*'
+  banner:
+    host: localhost
+    paths: '/banner/*'
+serviceEndpoints:
+  accountSrv:
+    url: 'http://localhost:3001'
+  bannerSrv:
+    url: 'http://localhost:3002'
+policies:
+  - rewrite
+  - jwt
+  - proxy
+pipelines:
+  # login:
+  #   apiEndpoints:
+  #     - login
+  #   policies:
+  #     - proxy:
+  #         - action:
+  #             serviceEndpoint: accountSrv 
+  banner:
+    apiEndpoints:
+      - banner
+    policies:
+      - rewrite:
+          - action:
+              search: '/banner'
+              replace: '/banner/v2/list'
+      - proxy:
+          - action:
+              serviceEndpoint: bannerSrv
+  account:
+    apiEndpoints:
+      - account
+    policies:
+      - jwt:
+          - 
+            condition:
+              name: 'white-list'
+              list: ['/account/login']
+            action:
+              jwtExtractor: 'query'
+              jwtExtractorField: 'token'
+              checkCredentialExistence: false
+              secretOrPublicKeyFile: '../secret-files/public.pem'
+      - proxy:
+          - action:
+              serviceEndpoint: accountSrv
